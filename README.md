@@ -1,6 +1,10 @@
 # Phantomdron
 ## Proof of concept
 ### Design and implement a solution architecture for the new platform
+
+![alt text](https://github.com/rakamahatta/phantomdron/blob/main/pocdesign.jpg?raw=true)
+
+
 Resources are based on PaaS and SaaS solutions on Azure.  
 
 Application is installed on App Service with Docker image 4.8.4. Application backends are Storage account file share for content files and Azure Database for MySQL Server for application database.  
@@ -13,7 +17,8 @@ Autoscaling requirement with up to 4 instances is configured for both region bas
 
 For development environment App Service Slot with same Docker image version is defined and with separate site configuration parameters. DevOps team will use this Slot to work on the application with separate development Azure Database for MySQL and file share. This database is from Basic SKU due to the cost optimization requirement.  
 
-Because of autoscaling and 5 Application Slots requirements Standard S1 App Service Plan SKU in production is minimal option.  
+Because of autoscaling and 5 Application Slots requirements Standard S1 App Service Plan SKU in production is minimal option.
+
 Application insight is configured for the production application in order to provide additional information for DevOps team.  
 Function App with Consumption SKU App Service plan is deployed for the purpose of maintenance scripts.
 
@@ -21,3 +26,5 @@ All App Services have system managed identities enabled as requirement for Key V
 
 
 This template creates all resources defined for this proof of concept.  
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Frakamahatta%2Fphantomdron%2Fmain%2Fazuredeploy.json)
