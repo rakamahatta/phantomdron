@@ -120,6 +120,7 @@
     },
     "variables": {
         "mySqlServerName": "[concat(parameters('applicationPrefix'), uniqueString(resourceGroup().Id), '-mysql')]",
+        "mySqlServerRepName": "[concat(parameters('applicationPrefix'), uniqueString(resourceGroup().Id), '-mysql-rep')]",
         "mySqlDevServerName": "[concat(parameters('applicationPrefix'), uniqueString(resourceGroup().Id), '-mysqldev')]",
         "storageAccountName": "[concat(parameters('applicationPrefix'), uniqueString(resourceGroup().Id), 'storage')]",
         "webAppPriName": "[concat(parameters('applicationPrefix'), uniqueString(resourceGroup().Id), '-web-pri')]",
@@ -173,8 +174,7 @@
                 "storageProfile": {
                     "storageMB": 5120,
                     "backupRetentionDays": 7,
-                    "geoRedundantBackup": "Enabled",
-                    "storageAutogrow": "Enabled"
+                    "geoRedundantBackup": "Disabled"
                 },
                 "createMode": "Default",
                 "administratorLogin": "[parameters('administratorLogin')]",
@@ -225,6 +225,78 @@
             ]
         },
         {
+            "name": "[variables('mySqlServerRepName')]",
+            "type": "Microsoft.DBforMySQL/servers",
+            "apiVersion": "2017-12-01",
+            "dependsOn": [
+                "[variables('logAnalyticsWorkspaceName')]",
+                "[variables('mySqlServerName')]"
+            ],
+            "location": "[parameters('secondaryLocation')]",
+            "sku": {
+                "name": "GP_Gen5_2"
+            },
+            "properties": {
+                "version": "[parameters('mySqlVersion')]",
+                "sslEnforcement": "Disabled",
+                "minimalTlsVersion": "TLSEnforcementDisabled",
+                "infrastructureEncryption": "Disabled",
+                "publicNetworkAccess": "Enabled",
+                "storageProfile": {
+                    "storageMB": 5120,
+                    "backupRetentionDays": 7,
+                    "geoRedundantBackup": "Disabled"
+                },
+                "createMode": "Replica",
+                "sourceServerId": "[resourceId('Microsoft.DBforMySQL/servers', variables('mySqlServerName'))]",
+                "administratorLogin": "[parameters('administratorLogin')]",
+                "administratorLoginPassword": "[parameters('administratorLoginPassword')]"
+            },
+            "resources": [
+                {
+                    "type": "firewallrules",
+                    "apiVersion": "2017-12-01",
+                    "dependsOn": [
+                        "[variables('mySqlServerRepName')]"
+                    ],
+                    "location": "[parameters('secondaryLocation')]",
+                    "name": "AllowAzureIPs",
+                    "properties": {
+                        "startIpAddress": "0.0.0.0",
+                        "endIpAddress": "0.0.0.0"
+                    }
+                },
+                {
+                    "name": "[concat('Microsoft.Insights/', 'mySqlDiagnostics')]",
+                    "type": "providers/diagnosticSettings",
+                    "apiVersion": "2017-05-01-preview",
+                    "location": "[parameters('secondaryLocation')]",
+                    "dependsOn": [
+                        "[variables('mySqlServerRepName')]"
+                    ],
+                    "properties": {
+                        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]",
+                        "metrics": [
+                            {
+                                "category": "AllMetrics",
+                                "enabled": true
+                            }
+                        ],
+                        "logs": [
+                            {
+                                "category": "MySqlSlowLogs",
+                                "enabled": true
+                            },
+                            {
+                                "category": "MySqlAuditLogs",
+                                "enabled": true
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
             "name": "[variables('mySqlDevServerName')]",
             "type": "Microsoft.DBforMySQL/servers",
             "apiVersion": "2017-12-01",
@@ -244,8 +316,7 @@
                 "storageProfile": {
                     "storageMB": 5120,
                     "backupRetentionDays": 7,
-                    "geoRedundantBackup": "Disabled",
-                    "storageAutogrow": "Enabled"
+                    "geoRedundantBackup": "Disabled"
                 },
                 "createMode": "Default",
                 "administratorLogin": "[parameters('administratorLoginDev')]",
@@ -660,7 +731,7 @@
             "location": "[parameters('secondaryLocation')]",
             "kind": "app,linux,container",
             "dependsOn": [
-                "[variables('webAppPriName')]",
+                "[variables('mySqlServerRepName')]",
                 "[variables('logAnalyticsWorkspaceName')]",
                 "[variables('appServicePlanSecName')]",
                 "[variables('applicationInsightsSecName')]",
@@ -722,11 +793,11 @@
                         "XDT_MicrosoftApplicationInsights_Mode": "default",
                         "NODE_ENV": "production",
                         "database__client": "mysql",
-                        "database__connection__database": "[variables('mySqlServerName')]",
-                        "database__connection__host": "[concat(variables('mySqlServerName'),'.mysql.database.azure.com')]",
+                        "database__connection__database": "[variables('mySqlServerRepName')]",
+                        "database__connection__host": "[concat(variables('mySqlServerRepName'),'.mysql.database.azure.com')]",
                         "database__connection__password": "[concat('@Microsoft.KeyVault(SecretUri=', reference(variables('administratorLoginPasswordResourceId')).secretUriWithVersion, ')')]",
                         "database__connection__port": "3306",
-                        "database__connection__user": "[concat(parameters('administratorLogin'),'@',variables('mySqlServerName'))]",
+                        "database__connection__user": "[concat(parameters('administratorLogin'),'@',variables('mySqlServerRepName'))]",
                         "GHOST_CONTENT": "/var/lib/ghost/content_files/",
                         "paths__contentPath": "/var/lib/ghost/content_files/",
                         "privacy_useUpdateCheck": "false",
