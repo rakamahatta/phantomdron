@@ -2,7 +2,7 @@
 ## Proof of concept
 ### Design and implement a solution architecture for the new platform
 
-![alt text](https://github.com/rakamahatta/phantomdron/blob/main/designpoc.jpg?raw=true)
+![alt text](https://github.com/rakamahatta/phantomdron/blob/main/design_poc.jpg?raw=true)
 
 
 Resources are based on PaaS and SaaS solutions on Azure.  
