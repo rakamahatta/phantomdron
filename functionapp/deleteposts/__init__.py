@@ -13,10 +13,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info(cnx)
     # Delete all posts 
     cursor = cnx.cursor()
-    cursor.execute("
-        SET FOREIGN_KEY_CHECKS = 0;
-        DELETE FROM `<database_name>`.posts WHERE `type` = 'post'; 
-        ")
+    cursor.execute("SET FOREIGN_KEY_CHECKS = 0; DELETE FROM `<database_name>`.posts WHERE `type` = 'post';")
     result_list = cursor.fetchall()
     # Build result response text
     result_str_list = []
