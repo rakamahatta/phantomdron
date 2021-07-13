@@ -107,8 +107,9 @@
         },
         "functionWorkerRuntime": {
         "type": "string",
-        "defaultValue": "node",
+        "defaultValue": "python",
         "allowedValues": [
+            "python",
             "node",
             "dotnet",
             "java"
